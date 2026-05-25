@@ -1,10 +1,12 @@
 package br.unipar.frameworks.controller;
 
+import br.unipar.frameworks.config.JwtService;
 import br.unipar.frameworks.dto.LoginRequest;
 import br.unipar.frameworks.dto.RegisterRequest;
 import br.unipar.frameworks.dto.UserResponse;
 import br.unipar.frameworks.model.User;
 import br.unipar.frameworks.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -17,14 +19,16 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         User user = new User();
         user.setName(request.name());
         user.setEmail(request.email());
@@ -55,9 +59,11 @@ public class AuthController {
                             user.getRole()
                     );
 
+                    String token = jwtService.generateToken(user);
+
                     return ResponseEntity.ok(Map.of(
                             "message", "Login realizado para laboratório",
-                            "fakeToken", "TOKEN-" + user.getId() + "-" + user.getRole(),
+                            "token", token,
                             "user", userDto
                     ));
                 })
